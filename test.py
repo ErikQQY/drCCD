@@ -48,7 +48,7 @@ mf.kernel()
 
 ovov, ovvo, mo_energy = build_drccd_integrals(mf)
 
-e_drccd_julia, t2_julia, retcode = jl.DRCCDJulia.solve_drccd_energy(
+e_drccd_julia, t2_julia, retcode, stats = jl.DRCCDJulia.solve_drccd_energy(
     ovov, ovvo, mo_energy,
 )
 
@@ -59,3 +59,10 @@ print("Julia solver retcode:", retcode)
 print("drCCD correlation energy from Julia:", float(e_drccd_julia))
 print("RPA correlation energy from PySCF:", e_rpa)
 print("Difference between Julia drCCD and PySCF dRPA:", float(e_drccd_julia) - e_rpa)
+
+print("=====Performance Stats=====")
+print("number of function evaluations: ", stats.nf)
+print("number of jacobian evaluations: ", stats.njacs)
+print("number of factorizations: ", stats.nfactors)
+print("number of linear solves: ", stats.nsolve)
+print("number of steps taken: ", stats.nsteps)

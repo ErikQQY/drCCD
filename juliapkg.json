@@ -1,0 +1,25 @@
+{
+    "julia": "1.12.1",
+    "packages": {
+        "ADTypes": {
+            "uuid": "47edcb42-4c32-4615-8424-f2b9edc5f35b",
+            "version": "1.22.0"
+        },
+        "NonlinearSolve": {
+            "uuid": "8913a72c-1f9b-4ce2-8d82-65094dcecaec",
+            "version": "4.19.0"
+        },
+        "SparseArrays": {
+            "uuid": "2f01184e-e22b-5df5-ae63-d93ebab69eaf",
+            "version": "1.12.0"
+        },
+        "SparseConnectivityTracer": {
+            "uuid": "9f842d2f-2579-4b1d-911e-f412cf18a3f5",
+            "version": "1.2.1"
+        },
+        "SparseMatrixColorings": {
+            "uuid": "0a514795-09f3-496d-8182-132a7b665d35",
+            "version": "0.4.27"
+        }
+    }
+}

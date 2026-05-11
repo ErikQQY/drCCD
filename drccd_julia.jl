@@ -2,6 +2,10 @@ module DRCCDJulia
 
 using LinearAlgebra
 using NonlinearSolve
+using SparseArrays
+import ADTypes
+using SparseConnectivityTracer
+using SparseMatrixColorings
 
 export solve_drccd_energy
 
@@ -113,10 +117,16 @@ function solve_drccd_energy(ovov_py, ovvo_py, mo_energy_py;
         return nothing
     end
 
-    prob = NonlinearProblem(
-        NonlinearFunction(residual!),
-        vec(copy(T0)),
+    res = similar(vec(T0))
+
+    f! = (du, u) -> residual!(du, u, nothing)
+    jac_sparsity = ADTypes.jacobian_sparsity(f!, res, vec(T0), SparseConnectivityTracer.TracerSparsityDetector())
+
+    f = NonlinearFunction(
+        residual!;
+        jac_prototype = jac_sparsity
     )
+    prob = NonlinearProblem(f, vec(copy(T0)))
 
     sol = solve(prob, NewtonRaphson();
                 abstol=abstol, reltol=reltol, maxiters=maxiters)
@@ -128,7 +138,39 @@ function solve_drccd_energy(ovov_py, ovvo_py, mo_energy_py;
         energy += 2.0 * T[i,j,a,b] * ovov[i,a,j,b]
     end
 
-    return energy, T, sol.retcode
+    return energy, T, sol.retcode, sol.stats
+end
+
+# Column-major linear index for T[i,j,a,b] with size (nocc,nocc,nvir,nvir)
+@inline linidx(i,j,a,b,nocc,nvir) = i + (j-1)*nocc + (a-1)*nocc*nocc + (b-1)*nocc*nocc*nvir
+
+function drccd_jac_prototype(nocc, nvir)
+    N = nocc*nocc*nvir*nvir
+    I = Int[]
+    J = Int[]
+
+    # rough reserve: each row ~ 2*nocc*nvir
+    sizehint!(I, N * (2*nocc*nvir))
+    sizehint!(J, N * (2*nocc*nvir))
+
+    for i in 1:nocc, j in 1:nocc, a in 1:nvir, b in 1:nvir
+        r = linidx(i,j,a,b,nocc,nvir)
+
+        # block 1: columns (m,j,e,b)
+        for m in 1:nocc, e in 1:nvir
+            c = linidx(m,j,e,b,nocc,nvir)
+            push!(I, r); push!(J, c)
+        end
+
+        # block 2: columns (i,n,a,f)
+        for n in 1:nocc, f in 1:nvir
+            c = linidx(i,n,a,f,nocc,nvir)
+            push!(I, r); push!(J, c)
+        end
+    end
+
+    # structural pattern only; values will be written by jac!
+    return sparse(I, J, ones(Float64, length(I)), N, N)
 end
 
 end
